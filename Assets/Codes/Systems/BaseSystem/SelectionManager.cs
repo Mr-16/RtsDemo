@@ -1,4 +1,5 @@
 using Assets.Codes.Game;
+using Assets.Codes.Systems.BuildingSystem;
 using Assets.Codes.Systems.FlowFieldSystem;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,6 +18,7 @@ public class SelectionManager : MonoBehaviour
     private List<Unit> selectedUnitList = new List<Unit>();
     public LayerMask groundLayer;
     [SerializeField] private GameObject moveCmdMarkPrefab;
+    [SerializeField] private Building testBuildingPrefab;
 
     void Awake()
     {
@@ -58,20 +60,6 @@ public class SelectionManager : MonoBehaviour
                 BoxSelect(dragStart, dragEnd);
         }
 
-        //if(Mouse.current.rightButton.wasPressedThisFrame)
-        //{
-        //    Debug.Log("[rightButton]");
-        //    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-        //    if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayer))
-        //    {
-        //        Vector3 spawnPos = hit.point;
-        //        //Instantiate(targetMarkPrefab, spawnPos, Quaternion.identity);
-        //        Debug.Log(spawnPos);
-        //    }
-            
-        //}
-
         if (Mouse.current.rightButton.wasPressedThisFrame)
         {
             //Debug.Log("[rightButton]");
@@ -81,7 +69,6 @@ public class SelectionManager : MonoBehaviour
 
             if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayer))
             {
-                //Debug.Log(hit.point);
                 GameObject mark = Instantiate(moveCmdMarkPrefab, hit.point, Quaternion.identity);
                 FlowField flowField = new FlowField(2);
                 flowField.ComputeFlowField(hit.point);
@@ -91,6 +78,44 @@ public class SelectionManager : MonoBehaviour
                 }
                 await Task.Delay(1000);
                 Destroy(mark);
+            }
+        }
+
+        if (Keyboard.current.digit1Key.wasPressedThisFrame)
+        {
+            
+            Vector2 mousePos = Mouse.current.position.ReadValue();
+            Ray ray = Camera.main.ScreenPointToRay(mousePos);
+            if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayer))
+            {
+                //GameObject mark = Instantiate(moveCmdMarkPrefab, hit.point, Quaternion.identity);
+                Debug.Log(hit.point);
+                if(BuildingManager.Instance.CanPlace(hit.point, testBuildingPrefab))
+                {
+                    Vector3 buildPos = BuildingManager.Instance.GetBuildPos(hit.point);
+                    Building building = Instantiate(testBuildingPrefab, buildPos, Quaternion.identity);
+                    BuildingManager.Instance.Place(hit.point, building);
+                }
+                else
+                {
+                    Debug.Log("Cannot place building here!");
+                }
+            }
+        }
+        if (Keyboard.current.digit2Key.wasPressedThisFrame)
+        {
+
+            Vector2 mousePos = Mouse.current.position.ReadValue();
+            Ray ray = Camera.main.ScreenPointToRay(mousePos);
+            if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayer))
+            {
+                Debug.Log(hit.point);
+                Building rmBd = BuildingManager.Instance.GetBuilding(hit.point);
+                if (rmBd != null)
+                {
+                    BuildingManager.Instance.Remove(rmBd);
+                    Destroy(rmBd.gameObject);
+                }
             }
         }
     }

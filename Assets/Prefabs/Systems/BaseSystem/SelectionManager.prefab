@@ -50,6 +50,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   moveCmdMarkPrefab: {fileID: 2216158862021133965, guid: f4c75f58c45c4d34ab0c0f934b780546, type: 3}
+  testBuildingPrefab: {fileID: 8820619488775058280, guid: 1c79f0d367195824d9becb7894c10c94, type: 3}
 --- !u!1 &8142855049567255546
 GameObject:
   m_ObjectHideFlags: 0

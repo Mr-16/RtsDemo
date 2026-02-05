@@ -36,8 +36,8 @@ namespace Assets.Codes.Systems.FlowFieldSystem
         public FlowField(float cellSize)
         {
             this._cellSize = cellSize;
-            _width = (int)MathF.Ceiling(GameConstant.WorldWidth / cellSize);
-            _height = (int)MathF.Ceiling(GameConstant.WorldHeight / cellSize);
+            _width = (int)MathF.Ceiling(GlobalConstant.WorldWidth / cellSize);
+            _height = (int)MathF.Ceiling(GlobalConstant.WorldHeight / cellSize);
 
             _grid = new FlowFieldCell[_width, _height];
             for (int x = 0; x < _width; x++)
@@ -52,7 +52,7 @@ namespace Assets.Codes.Systems.FlowFieldSystem
 
         public void ComputeFlowField(Vector3 worldTargetPos)
         {
-            Vec2I target = GameHelper.WorldToGrid(worldTargetPos, _cellSize);
+            Vec2I target = GlobalHelper.WorldToGrid(worldTargetPos, _cellSize);
 
             // 初始化
             for (int x = 0; x < _width; x++)
@@ -99,7 +99,7 @@ namespace Assets.Codes.Systems.FlowFieldSystem
 
         public Vector3 GetDir(Vector3 worldPos)
         {
-            Vec2I cellPos = GameHelper.WorldToGrid(worldPos, _cellSize);
+            Vec2I cellPos = GlobalHelper.WorldToGrid(worldPos, _cellSize);
             FlowFieldCell cell = _grid[cellPos.X, cellPos.Y];
             Vector3 dir = new Vector3(cell.FlowDirX, 0, cell.FlowDirY);
             if (dir.sqrMagnitude > 0)
