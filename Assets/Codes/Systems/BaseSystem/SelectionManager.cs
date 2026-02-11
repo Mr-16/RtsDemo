@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using Debug = UnityEngine.Debug;
 
@@ -20,6 +21,7 @@ public class SelectionManager : MonoBehaviour
     [SerializeField] private GameObject moveCmdMarkPrefab;
     [SerializeField] private Building testBuildingPrefab;
 
+
     void Awake()
     {
         Instance = this;
@@ -34,8 +36,21 @@ public class SelectionManager : MonoBehaviour
 
     async Task HandleInput()
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            Debug.Log("111");
+        }
+        else
+        {
+            Debug.Log("222");
+        }
+
+
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
+            if (EventSystem.current.IsPointerOverGameObject())
+                return;
+
             dragStart = Mouse.current.position.ReadValue();
             isDragging = true;
             if (selectionBox != null) selectionBox.gameObject.SetActive(true);
@@ -57,13 +72,14 @@ public class SelectionManager : MonoBehaviour
             if (Vector2.Distance(dragStart, dragEnd) < 5f)
                 SingleSelect(dragEnd);
             else
+            {
                 BoxSelect(dragStart, dragEnd);
+            }
         }
 
         if (Mouse.current.rightButton.wasPressedThisFrame)
         {
             //Debug.Log("[rightButton]");
-
             Vector2 mousePos = Mouse.current.position.ReadValue();
             Ray ray = Camera.main.ScreenPointToRay(mousePos);
 
@@ -164,7 +180,7 @@ public class SelectionManager : MonoBehaviour
         );
 
         //Unit[] allUnits = FindObjectsOfType<Unit>();
-        List<Unit> unitList = GameManager.Instance().UnitList;
+        List<Unit> unitList = GameManager.Instance.UnitList;
         foreach (Unit unit in unitList)
         {
             Vector3 screenPos = Camera.main.WorldToScreenPoint(unit.transform.position);

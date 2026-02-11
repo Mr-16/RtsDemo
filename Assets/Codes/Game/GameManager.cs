@@ -9,11 +9,10 @@ namespace Assets.Codes.Game
     public class GameManager
     {
         private static GameManager instance = new GameManager();
-        public static GameManager Instance()
-        {
-            return instance;
-        }
+        public static GameManager Instance => instance;
         private GameManager() { }
         public List<Unit> UnitList = new List<Unit>();
+
+        public bool IsUiDragging = false;
     }
 }

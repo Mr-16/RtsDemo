@@ -112,6 +112,24 @@ namespace Assets.Codes.Systems.FlowFieldSystem
             if (x >= 0 && x < _width && y >= 0 && y < _height)
                 _grid[x, y].IsObstacle = isObstacle;
         }
+
+        public float GetDistanceSq(Vector3 worldPos)
+        {
+            Vec2I cellPos = GlobalHelper.WorldToGrid(worldPos, _cellSize);
+
+            if (cellPos.X < 0 || cellPos.X >= _width ||
+                cellPos.Y < 0 || cellPos.Y >= _height)
+                return float.MaxValue;
+
+            float cost = _grid[cellPos.X, cellPos.Y].Cost;
+
+            // 不可达
+            if (cost == float.MaxValue)
+                return float.MaxValue;
+
+            return cost * cost;
+        }
+
     }
 
     public class FlowFieldManager
