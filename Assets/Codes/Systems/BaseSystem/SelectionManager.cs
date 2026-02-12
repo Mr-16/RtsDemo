@@ -36,14 +36,14 @@ public class SelectionManager : MonoBehaviour
 
     async Task HandleInput()
     {
-        if (EventSystem.current.IsPointerOverGameObject())
-        {
-            Debug.Log("111");
-        }
-        else
-        {
-            Debug.Log("222");
-        }
+        //if (EventSystem.current.IsPointerOverGameObject())
+        //{
+        //    Debug.Log("111");
+        //}
+        //else
+        //{
+        //    Debug.Log("222");
+        //}
 
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
@@ -94,44 +94,6 @@ public class SelectionManager : MonoBehaviour
                 }
                 await Task.Delay(1000);
                 Destroy(mark);
-            }
-        }
-
-        if (Keyboard.current.digit1Key.wasPressedThisFrame)
-        {
-            
-            Vector2 mousePos = Mouse.current.position.ReadValue();
-            Ray ray = Camera.main.ScreenPointToRay(mousePos);
-            if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayer))
-            {
-                //GameObject mark = Instantiate(moveCmdMarkPrefab, hit.point, Quaternion.identity);
-                Debug.Log(hit.point);
-                if(BuildingManager.Instance.CanPlace(hit.point, testBuildingPrefab))
-                {
-                    Vector3 buildPos = BuildingManager.Instance.GetBuildPos(hit.point);
-                    Building building = Instantiate(testBuildingPrefab, buildPos, Quaternion.identity);
-                    BuildingManager.Instance.Place(hit.point, building);
-                }
-                else
-                {
-                    Debug.Log("Cannot place building here!");
-                }
-            }
-        }
-        if (Keyboard.current.digit2Key.wasPressedThisFrame)
-        {
-
-            Vector2 mousePos = Mouse.current.position.ReadValue();
-            Ray ray = Camera.main.ScreenPointToRay(mousePos);
-            if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayer))
-            {
-                Debug.Log(hit.point);
-                Building rmBd = BuildingManager.Instance.GetBuilding(hit.point);
-                if (rmBd != null)
-                {
-                    BuildingManager.Instance.Remove(rmBd);
-                    Destroy(rmBd.gameObject);
-                }
             }
         }
     }

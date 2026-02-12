@@ -12,7 +12,5 @@ namespace Assets.Codes.Game
         public static GameManager Instance => instance;
         private GameManager() { }
         public List<Unit> UnitList = new List<Unit>();
-
-        public bool IsUiDragging = false;
     }
 }
