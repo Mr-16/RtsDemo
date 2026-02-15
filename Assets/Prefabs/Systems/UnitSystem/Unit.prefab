@@ -240,7 +240,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Unit
   SelectedMark: {fileID: 358315734653001226}
-  moveSpeed: 10
+  maxSpeed: 10
+  maxForce: 300
+  arriveCost: 1.5
+  stopSpeed: 0.1
+  separationRadius: 3
+  separationWeight: 1500
+  damping: 5
 --- !u!1 &5209872108335002799
 GameObject:
   m_ObjectHideFlags: 0

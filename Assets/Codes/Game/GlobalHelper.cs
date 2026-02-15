@@ -18,5 +18,24 @@ namespace Assets.Codes.Game
             y = Math.Clamp(y, 0, (int)MathF.Ceiling(GlobalConstant.WorldHeight / cellSize) - 1);
             return new Vec2I(x, y);
         }
+        public static MonoBehaviour FindNearest(Vector3 pos, List<MonoBehaviour> mbList)
+        {
+            if (mbList == null || mbList.Count == 0)
+                throw new ArgumentException("list is null or empty");
+
+            MonoBehaviour nearestMb = mbList[0];
+            float minDistSq = (nearestMb.transform.position - pos).sqrMagnitude;
+
+            for (int i = 1; i < mbList.Count; i++)
+            {
+                float curDistSq = (mbList[i].transform.position - pos).sqrMagnitude;
+                if (curDistSq < minDistSq)
+                {
+                    minDistSq = curDistSq;
+                    nearestMb = mbList[i];
+                }
+            }
+            return nearestMb;
+        }
     }
 }

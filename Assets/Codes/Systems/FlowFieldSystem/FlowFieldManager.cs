@@ -32,6 +32,7 @@ namespace Assets.Codes.Systems.FlowFieldSystem
         private int _height;
         private float _cellSize;
         private FlowFieldCell[,] _grid;
+        private Vector3 targetPos;
 
         public FlowField(float cellSize)
         {
@@ -52,6 +53,7 @@ namespace Assets.Codes.Systems.FlowFieldSystem
 
         public void ComputeFlowField(Vector3 worldTargetPos)
         {
+            targetPos = worldTargetPos;
             Vec2I target = GlobalHelper.WorldToGrid(worldTargetPos, _cellSize);
 
             // 初始化
@@ -97,15 +99,48 @@ namespace Assets.Codes.Systems.FlowFieldSystem
             }
         }
 
+        public Vector3 GetDirOld(Vector3 worldPos) { Vec2I cellPos = GlobalHelper.WorldToGrid(worldPos, _cellSize); FlowFieldCell cell = _grid[cellPos.X, cellPos.Y]; Vector3 dir = new Vector3(cell.FlowDirX, 0, cell.FlowDirY); if (dir.sqrMagnitude > 0) dir.Normalize(); return dir; }
         public Vector3 GetDir(Vector3 worldPos)
         {
-            Vec2I cellPos = GlobalHelper.WorldToGrid(worldPos, _cellSize);
-            FlowFieldCell cell = _grid[cellPos.X, cellPos.Y];
-            Vector3 dir = new Vector3(cell.FlowDirX, 0, cell.FlowDirY);
-            if (dir.sqrMagnitude > 0)
-                dir.Normalize();
-            return dir;
+            // 转成浮点格子坐标
+            Vec2I gridPos = GlobalHelper.WorldToGrid(worldPos, _cellSize);
+
+            int x0 = gridPos.X;
+            int y0 = gridPos.Y;
+            int x1 = x0 + 1;
+            int y1 = y0 + 1;
+
+            // 越界保护（边缘直接返回最近格子方向）
+            if (x0 < 0 || y0 < 0 || x1 >= _width || y1 >= _height)
+            {
+                x0 = Mathf.Clamp(x0, 0, _width - 1);
+                y0 = Mathf.Clamp(y0, 0, _height - 1);
+                var cell = _grid[x0, y0];
+                Vector3 fallback = new Vector3(cell.FlowDirX, 0, cell.FlowDirY);
+                if (fallback.sqrMagnitude > 0)
+                    fallback.Normalize();
+                return fallback;
+            }
+
+            float tx = gridPos.X - x0;
+            float ty = gridPos.Y - y0;
+
+            Vector3 d00 = new Vector3(_grid[x0, y0].FlowDirX, 0, _grid[x0, y0].FlowDirY);
+            Vector3 d10 = new Vector3(_grid[x1, y0].FlowDirX, 0, _grid[x1, y0].FlowDirY);
+            Vector3 d01 = new Vector3(_grid[x0, y1].FlowDirX, 0, _grid[x0, y1].FlowDirY);
+            Vector3 d11 = new Vector3(_grid[x1, y1].FlowDirX, 0, _grid[x1, y1].FlowDirY);
+
+            // 双线性插值
+            Vector3 dx0 = Vector3.Lerp(d00, d10, tx);
+            Vector3 dx1 = Vector3.Lerp(d01, d11, tx);
+            Vector3 result = Vector3.Lerp(dx0, dx1, ty);
+
+            if (result.sqrMagnitude > 0)
+                result.Normalize();
+
+            return result;
         }
+
 
         public void SetObstacle(int x, int y, bool isObstacle)
         {
@@ -113,23 +148,26 @@ namespace Assets.Codes.Systems.FlowFieldSystem
                 _grid[x, y].IsObstacle = isObstacle;
         }
 
-        public float GetDistanceSq(Vector3 worldPos)
+        public Vector3 GetTargetPos()
         {
-            Vec2I cellPos = GlobalHelper.WorldToGrid(worldPos, _cellSize);
-
-            if (cellPos.X < 0 || cellPos.X >= _width ||
-                cellPos.Y < 0 || cellPos.Y >= _height)
-                return float.MaxValue;
-
-            float cost = _grid[cellPos.X, cellPos.Y].Cost;
-
-            // 不可达
-            if (cost == float.MaxValue)
-                return float.MaxValue;
-
-            return cost * cost;
+            return targetPos;
         }
+        //public float GetDistanceSq(Vector3 worldPos)
+        //{
+        //    Vec2I cellPos = GlobalHelper.WorldToGrid(worldPos, _cellSize);
 
+        //    if (cellPos.X < 0 || cellPos.X >= _width ||
+        //        cellPos.Y < 0 || cellPos.Y >= _height)
+        //        return float.MaxValue;
+
+        //    float cost = _grid[cellPos.X, cellPos.Y].Cost;
+
+        //    // 不可达
+        //    if (cost == float.MaxValue)
+        //        return float.MaxValue;
+
+        //    return cost * cost;
+        //}
     }
 
     public class FlowFieldManager

@@ -44,7 +44,7 @@ public class SelectionManager : MonoBehaviour
         //{
         //    Debug.Log("222");
         //}
-
+        //Debug.Log("isDragging : " + isDragging);
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
@@ -65,16 +65,15 @@ public class SelectionManager : MonoBehaviour
         if (Mouse.current.leftButton.wasReleasedThisFrame)
         {
             Vector2 dragEnd = Mouse.current.position.ReadValue();
-            isDragging = false;
-
             if (selectionBox != null) selectionBox.gameObject.SetActive(false);
 
             if (Vector2.Distance(dragStart, dragEnd) < 5f)
                 SingleSelect(dragEnd);
-            else
+            else if(isDragging)
             {
                 BoxSelect(dragStart, dragEnd);
             }
+            isDragging = false;
         }
 
         if (Mouse.current.rightButton.wasPressedThisFrame)
@@ -90,7 +89,7 @@ public class SelectionManager : MonoBehaviour
                 flowField.ComputeFlowField(hit.point);
                 foreach (Unit unit in selectedUnitList)
                 {
-                    unit.flowField = flowField;
+                    unit.curFlowField = flowField;
                 }
                 await Task.Delay(1000);
                 Destroy(mark);

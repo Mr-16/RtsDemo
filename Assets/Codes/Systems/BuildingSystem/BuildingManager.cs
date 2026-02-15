@@ -79,10 +79,10 @@ namespace Assets.Codes.Systems.BuildingSystem
             }
             cellListMap.Remove(building);
         }
-        public Building? GetBuilding(Vector3 worldPos)
+        public Building GetBuilding(Vector3 worldPos)
         {
             Vec2I cellPos = GlobalHelper.WorldToGrid(worldPos, cellSize);
-            if (buildingMap.TryGetValue(cellPos, out Building? building) == false)
+            if (buildingMap.TryGetValue(cellPos, out Building building) == false)
                 return null;
             return building;
         }
