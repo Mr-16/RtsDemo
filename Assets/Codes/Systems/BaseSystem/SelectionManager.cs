@@ -87,10 +87,36 @@ public class SelectionManager : MonoBehaviour
                 GameObject mark = Instantiate(moveCmdMarkPrefab, hit.point, Quaternion.identity);
                 FlowField flowField = new FlowField(2);
                 flowField.ComputeFlowField(hit.point);
-                foreach (Unit unit in selectedUnitList)
+                //foreach (Unit unit in selectedUnitList)
+                //{
+                //    unit.curFlowField = flowField;
+                //}
+                int count = selectedUnitList.Count;
+                if (count == 0)
+                    return;
+
+                // 每个单位之间的间距
+                float spacing = 3f;
+                // 计算方阵的列数（尽量接近正方形）
+                int col = Mathf.CeilToInt(Mathf.Sqrt(count));
+                int row = Mathf.CeilToInt((float)count / col);
+                // 让阵型以点击点为中心
+                Vector3 center = hit.point;
+                // 左上角起始偏移
+                float width = (col - 1) * spacing;
+                float height = (row - 1) * spacing;
+                Vector3 startOffset = new Vector3(-width * 0.5f, 0, height * 0.5f);
+                for (int i = 0; i < count; i++)
                 {
+                    int r = i / col;
+                    int c = i % col;
+                    Vector3 offset = new Vector3(c * spacing, 0, -r * spacing);
+                    Vector3 targetPos = center + startOffset + offset;
+                    Unit unit = selectedUnitList[i];
+                    unit.SelfTargetPos = targetPos;
                     unit.curFlowField = flowField;
                 }
+
                 await Task.Delay(1000);
                 Destroy(mark);
             }

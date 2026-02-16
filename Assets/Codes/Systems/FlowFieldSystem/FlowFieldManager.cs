@@ -99,7 +99,6 @@ namespace Assets.Codes.Systems.FlowFieldSystem
             }
         }
 
-        public Vector3 GetDirOld(Vector3 worldPos) { Vec2I cellPos = GlobalHelper.WorldToGrid(worldPos, _cellSize); FlowFieldCell cell = _grid[cellPos.X, cellPos.Y]; Vector3 dir = new Vector3(cell.FlowDirX, 0, cell.FlowDirY); if (dir.sqrMagnitude > 0) dir.Normalize(); return dir; }
         public Vector3 GetDir(Vector3 worldPos)
         {
             // 转成浮点格子坐标

@@ -8,19 +8,17 @@ using Debug = UnityEngine.Debug;
 public class Unit : MonoBehaviour
 {
     private Vector3 curDir = Vector3.zero;
+    
+
 
     [SerializeField] public GameObject SelectedMark;
     void Start()
     {
-        //arriveCostSq = arriveCost * arriveCost;
-        //separationRadiusSq = separationRadius * separationRadius;
-
         Id = GameManager.Instance.UnitList.Count;
         GameManager.Instance.UnitList.Add(this);
 
         SelectedMark.SetActive(false);
-        //velocity = Vector3.zero;
-        brakeRadiusSq = brakeRadius * brakeRadius;
+        //brakeRadiusSq = BrakeRadius * BrakeRadius;
         sepRadiusSq = SepRadius * SepRadius;
     }
 
@@ -39,10 +37,7 @@ public class Unit : MonoBehaviour
 
     public float Mass = 10;//质量
     public float MaxVelocity = 30;//最大速度
-    public FlowField curFlowField;
-    private Vector3 curSeekForce = Vector3.zero;
-    private Vector3 curBrakeForce = Vector3.zero;
-    private Vector3 curSepForce = Vector3.zero;
+
     private Vector3 curTotalForce = Vector3.zero;
     private Vector3 curVelocity = Vector3.zero;
     private void Move()
@@ -53,73 +48,87 @@ public class Unit : MonoBehaviour
             return;
         }
 
-        //1. 得到全部力
-        curSeekForce = GetSeekForce();
-        curBrakeForce = GetBrakeForce();
-        curSepForce = GetSepForce();
-        
-        //2. 合成力
+        //1. 得到全部力, 并合成力
         curTotalForce = Vector3.zero;
-        curTotalForce += curSeekForce;
-        curTotalForce += curBrakeForce;
-        curTotalForce += curSepForce;
-        //3. 计算加速度, 速度, 最后移动
+        curTotalForce += GetSeekForce();
+        //curTotalForce += GetBrakeForce();
+        curTotalForce += GetSepForce();
+        curTotalForce += GetFrictionForce();
+
+        //2. 计算加速度, 速度, 最后移动
         Vector3 curAcceleration = curTotalForce / Mass;
         curVelocity = curVelocity + curAcceleration * Time.deltaTime;
         curVelocity = Vector3.ClampMagnitude(curVelocity, MaxVelocity);
         curVelocity.y = 0;
         transform.position = transform.position + curVelocity * Time.deltaTime;
-        transform.forward = curVelocity;
+        if(curVelocity != Vector3.zero)
+            transform.forward = curVelocity;
 
-        GameManager.Instance.unitSh.Update(this, transform.position);
+        GameManager.Instance.UnitSh.Update(this, transform.position);
     }
+
+    //目标力
+    public FlowField curFlowField;
+    public Vector3 SelfTargetPos;
+    public float ArrPosRadius = 10f;
+    //public float ArrBodyRadius = 0.3f;//自己占的位置
     public float SeekStrength = 1000;
     private Vector3 GetSeekForce()
     {
         //Seek : 指向目标点的力, 由流畅获得
         if (curFlowField == null)
             return Vector3.zero;
-        Vector3 res = SeekStrength * curFlowField.GetDir(transform.position);
-        return res;
-    }
-
-    private float brakeRadius = 3f;
-    private float brakeRadiusSq;
-    public float BrakeStrength = 20;
-    private Vector3 GetBrakeForce()
-    {
-        //Arrive : 接近终点时刹车的力
-        if (curFlowField == null)
-            return Vector3.zero;
         float distSq = (curFlowField.GetTargetPos() - transform.position).sqrMagnitude;
-        if (distSq > brakeRadiusSq)
+        if (distSq > ArrPosRadius * ArrPosRadius)
+            return curFlowField.GetDir(transform.position) * SeekStrength;
+        float selfTargetDistSq = (SelfTargetPos - transform.position).sqrMagnitude;
+        if (selfTargetDistSq < 0.1)
             return Vector3.zero;
-        return -curVelocity * BrakeStrength;
+        return (SelfTargetPos - transform.position).normalized * SeekStrength;
     }
 
+    //刹车力
+    //public float BrakeRadius = 3f;
+    //private float brakeRadiusSq;
+    //public float BrakeStrength = 20;
+    //private Vector3 GetBrakeForce()
+    //{
+    //    //Arrive : 接近终点时刹车的力
+    //    if (curFlowField == null)
+    //        return Vector3.zero;
+    //    float distSq = (curFlowField.GetTargetPos() - transform.position).sqrMagnitude;
+    //    if (distSq > brakeRadiusSq)
+    //        return Vector3.zero;
+    //    return -curVelocity * BrakeStrength;
+    //}
+
+    //分离力
     public float SepRadius = 3;
     private float sepRadiusSq;
     public float SepStrength = 100;
     private Vector3 GetSepForce()
     {
-        List<MonoBehaviour> sepMbList = GameManager.Instance.unitSh.Query(transform.position, SepRadius);
-
-        Stopwatch sw6 = Stopwatch.StartNew();
+        List<Unit> unitList = GameManager.Instance.UnitSh.Query(transform.position, SepRadius);
         Vector3 sepForce = Vector3.zero;
-        foreach (MonoBehaviour mb in sepMbList)
+        foreach (Unit unit in unitList)
         {
-            if (mb is not Unit unit)
-                continue;
             if (unit == this)
                 continue;
             Vector3 curVec = transform.position - unit.transform.position;
             float distSq = curVec.sqrMagnitude;
             if (distSq < 0.0001f)//防止0距离
                 continue;
-            if (distSq > brakeRadiusSq)
+            if (distSq > sepRadiusSq)
                 continue;
             sepForce += curVec / distSq;
         }
         return sepForce * SepStrength;
+    }
+
+    //摩檫力
+    public float FrictionStrength = 50f;
+    private Vector3 GetFrictionForce()
+    {
+        return -curVelocity * FrictionStrength;
     }
 }
