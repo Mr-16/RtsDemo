@@ -104,6 +104,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   BdPreviewPrefab: {fileID: 1830618228018561825, guid: f610f2900a948564fa7a17e45157e14e, type: 3}
   BdPrefab: {fileID: 2761245011468976915, guid: 1c79f0d367195824d9becb7894c10c94, type: 3}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 64
 --- !u!114 &8269478356945967494
 MonoBehaviour:
   m_ObjectHideFlags: 0

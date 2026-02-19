@@ -41,15 +41,16 @@ public class Unit : MonoBehaviour
     private Vector3 curVelocity = Vector3.zero;
     private void Move()
     {
-        if (Time.frameCount % moveBatchCount != Id % moveBatchCount)
-        {
-            transform.position = transform.position + curVelocity * Time.deltaTime;
-            return;
-        }
+        //if (Time.frameCount % moveBatchCount != Id % moveBatchCount)
+        //{
+        //    transform.position = transform.position + curVelocity * Time.deltaTime;
+        //    return;
+        //}
 
         //1. 得到全部力, 并合成力
         curTotalForce = Vector3.zero;
-        curTotalForce += GetSeekForce();
+        curTotalForce += GetFlowFieldSeekForce();
+        curTotalForce += GetSelfTargetSeekForce();
         curTotalForce += GetSepForce();
         curTotalForce += GetBdSepForce();
         curTotalForce += GetFrictionForce();
@@ -68,25 +69,34 @@ public class Unit : MonoBehaviour
 
     //目标力
     public FlowField curFlowField;
-    public Vector3 SelfTargetPos;
-    public float ArrPosRadius = 10f;
-    //public float ArrBodyRadius = 0.3f;//自己占的位置
-    public float SeekStrength = 1000;
-    private Vector3 GetSeekForce()
+    
+    public float FlowFieldTargetRadius = 10f;
+    public float FlowFieldSeekStrength = 1000;
+    private Vector3 GetFlowFieldSeekForce()
     {
-        //Seek : 指向目标点的力, 由流畅获得
-        float selfTargetDistSq = (SelfTargetPos - transform.position).sqrMagnitude;
-        if (curFlowField == null && selfTargetDistSq > 0.3)
-            return (SelfTargetPos - transform.position).normalized * SeekStrength;
         if(curFlowField == null)
             return Vector3.zero;
         float distSq = (curFlowField.GetTargetPos() - transform.position).sqrMagnitude;
-        if (distSq > ArrPosRadius * ArrPosRadius)
-            return curFlowField.GetDir(transform.position) * SeekStrength;
-        if (selfTargetDistSq < 0.3)
+        if(distSq < FlowFieldTargetRadius * FlowFieldTargetRadius)//到达了
+        {
+            curFlowField = null;
             return Vector3.zero;
-        return (SelfTargetPos - transform.position).normalized * SeekStrength;
+        }
+        return curFlowField.GetDir(transform.position) * FlowFieldSeekStrength;
     }
+
+    public Vector3 SelfTargetPos;
+    public float SelfTargetSeekStrength = 1000;
+    private Vector3 GetSelfTargetSeekForce()
+    {
+        if (curFlowField != null)
+            return Vector3.zero;
+        float distSq = (SelfTargetPos - transform.position).sqrMagnitude;
+        if (distSq < 0.01f)
+            return Vector3.zero;
+        return (SelfTargetPos - transform.position).normalized * SelfTargetSeekStrength;
+    }
+
 
     //分离力
     public float SepRadius = 3;

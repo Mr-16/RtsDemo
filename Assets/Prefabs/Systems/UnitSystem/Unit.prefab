@@ -199,13 +199,14 @@ MonoBehaviour:
   Id: 0
   Mass: 1
   MaxVelocity: 30
+  FlowFieldTargetRadius: 5
+  FlowFieldSeekStrength: 500
   SelfTargetPos: {x: 0, y: 0, z: 0}
-  ArrPosRadius: 50
-  SeekStrength: 847.1
+  SelfTargetSeekStrength: 500
   SepRadius: 1
-  SepStrength: 300
-  BdSepStrength: 100000
-  FrictionStrength: 50
+  SepStrength: 1000
+  BdSepStrength: 100000000
+  FrictionStrength: 30
 --- !u!1 &5209872108335002799
 GameObject:
   m_ObjectHideFlags: 0

@@ -3,6 +3,7 @@ using Assets.Codes.Systems.BuildingSystem;
 using Assets.Codes.Systems.FlowFieldSystem;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 public class BuildingCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
@@ -13,14 +14,43 @@ public class BuildingCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
     
     private GameObject BdPreview;
     private Camera mainCamera;
+    public LayerMask groundLayer;
 
     public void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
         mainCamera = Camera.main;
         buildingData = new BuildingData();
-        buildingData.Width = 10;
-        buildingData.Height = 10;
+        buildingData.Width = 2;
+        buildingData.Height = 2;
+    }
+    public void Update()
+    {
+        if (Keyboard.current.digit1Key.isPressed)
+        {
+            //RaycastHit hit;
+            Vector2 mousePos = Mouse.current.position.ReadValue();
+            Ray ray = mainCamera.ScreenPointToRay(mousePos);
+            if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayer))
+            {
+                Vector3 placePos = BuildingGrid.Instance().GetPlacePos(hit.point);
+                if (BuildingGrid.Instance().CanPlaceBuilding(placePos, buildingData.Width, buildingData.Height) == false)
+                {
+                    Debug.Log("CanPlaceBuilding False");
+                    return;
+                }
+
+                if (BuildingGrid.Instance().PlaceBuilding(placePos, buildingData.Width, buildingData.Height) == false)
+                {
+                    Debug.Log("PlaceBuilding False");
+                    return;
+                }
+                GameObject bdObj = Instantiate(BdPrefab, placePos, Quaternion.identity);
+                Building bd = bdObj.GetComponent<Building>();
+                GameManager.Instance.BdSh.Add(bd, bd.transform.position);
+                NavigationGrid.Instance().SetWalkable(placePos, buildingData.Width, buildingData.Height, false);
+            }
+        }
     }
 
     public void OnBeginDrag(PointerEventData eventData)

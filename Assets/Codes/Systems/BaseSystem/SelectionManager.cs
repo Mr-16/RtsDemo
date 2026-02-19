@@ -77,10 +77,8 @@ public class SelectionManager : MonoBehaviour
                 GameObject mark = Instantiate(moveCmdMarkPrefab, hit.point, Quaternion.identity);
                 FlowField flowField = new FlowField();
                 flowField.Compute(hit.point);
-                //foreach (Unit unit in selectedUnitList)
-                //{
-                //    unit.curFlowField = flowField;
-                //}
+                
+
                 int count = selectedUnitList.Count;
                 if (count == 0)
                     return;
@@ -106,7 +104,8 @@ public class SelectionManager : MonoBehaviour
                     unit.SelfTargetPos = targetPos;
                     unit.curFlowField = flowField;
                 }
-
+                if(FlowFieldGridTest.Instance() != null)
+                    FlowFieldGridTest.Instance().CurFlowField = flowField;
                 await Task.Delay(1000);
                 Destroy(mark);
             }
