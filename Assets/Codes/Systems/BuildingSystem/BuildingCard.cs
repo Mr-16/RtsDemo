@@ -1,5 +1,6 @@
 using Assets.Codes.Game;
 using Assets.Codes.Systems.BuildingSystem;
+using Assets.Codes.Systems.FlowFieldSystem;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -18,8 +19,8 @@ public class BuildingCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         rectTransform = GetComponent<RectTransform>();
         mainCamera = Camera.main;
         buildingData = new BuildingData();
-        buildingData.Width = 1;
-        buildingData.Height = 1;
+        buildingData.Width = 10;
+        buildingData.Height = 10;
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -54,20 +55,23 @@ public class BuildingCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         if (plane.Raycast(ray, out float distance))
         {
             Vector3 worldPos = ray.GetPoint(distance);
-            BuildingGrid.Instance().TryGetXY(worldPos, out int x, out int y);
-            if (BuildingGrid.Instance().CanPlaceBuilding(x, y, buildingData.Width, buildingData.Height) == false)
+            //BuildingGrid.Instance().TryGetXY(worldPos, out int x, out int y);
+            Vector3 placePos = BuildingGrid.Instance().GetPlacePos(worldPos);
+            if (BuildingGrid.Instance().CanPlaceBuilding(placePos, buildingData.Width, buildingData.Height) == false)
             {
                 Debug.Log("CanPlaceBuilding False");
                 return;
             }
 
-            if (BuildingGrid.Instance().PlaceBuilding(x, y, buildingData.Width, buildingData.Height) == false)
+            if (BuildingGrid.Instance().PlaceBuilding(placePos, buildingData.Width, buildingData.Height) == false)
             {
                 Debug.Log("PlaceBuilding False");
                 return;
             }
-            Vector3 pos = BuildingGrid.Instance().GetPlacePos(worldPos);
-            Instantiate(BdPrefab, pos, Quaternion.identity);
+            GameObject bdObj = Instantiate(BdPrefab, placePos, Quaternion.identity);
+            Building bd = bdObj.GetComponent<Building>();
+            GameManager.Instance.BdSh.Add(bd, bd.transform.position);
+            NavigationGrid.Instance().SetWalkable(placePos, buildingData.Width, buildingData.Height, false);
         }
     }
 
@@ -79,14 +83,13 @@ public class BuildingCard : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         {
             Vector3 worldPos = ray.GetPoint(distance);
             Vector3 placePos = BuildingGrid.Instance().GetPlacePos(worldPos);
-            BuildingGrid.Instance().TryGetXY(worldPos, out int x, out int y);
+            //BuildingGrid.Instance().TryGetXY(worldPos, out int x, out int y);
             BuildingPreview comp = BdPreview.GetComponent<BuildingPreview>();
-            if (BuildingGrid.Instance().CanPlaceBuilding(x, y, buildingData.Width, buildingData.Height))
+            if (BuildingGrid.Instance().CanPlaceBuilding(placePos, buildingData.Width, buildingData.Height))
                 comp.SetCanPlace(true);
             else
                 comp.SetCanPlace(false);
             BdPreview.transform.position = placePos;
-            
         }
     }
 }

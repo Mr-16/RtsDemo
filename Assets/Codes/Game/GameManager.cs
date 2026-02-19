@@ -17,7 +17,7 @@ namespace Assets.Codes.Game
         public List<Unit> UnitList = new List<Unit>();
         public GameObject BdGrid;
         public SpatialHash2D<Unit> UnitSh = new SpatialHash2D<Unit>(10);
-        public SpatialHash2D<Building> BuidlingSh = new SpatialHash2D<Building>(10);
+        public SpatialHash2D<Building> BdSh = new SpatialHash2D<Building>(10);
 
         private void Awake()
         {

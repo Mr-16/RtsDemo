@@ -9,8 +9,8 @@ namespace Assets.Codes.Systems.BuildingSystem
     public class BuildingData
     {
         public string Name;
-        public int Width;
-        public int Height;
+        public float Width;
+        public float Height;
         public int Cost;
 
     }

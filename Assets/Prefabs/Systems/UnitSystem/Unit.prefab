@@ -201,11 +201,10 @@ MonoBehaviour:
   MaxVelocity: 30
   SelfTargetPos: {x: 0, y: 0, z: 0}
   ArrPosRadius: 50
-  SeekStrength: 500
-  BrakeRadius: 5
-  BrakeStrength: 20
-  SepRadius: 2
-  SepStrength: 1000
+  SeekStrength: 847.1
+  SepRadius: 1
+  SepStrength: 300
+  BdSepStrength: 100000
   FrictionStrength: 50
 --- !u!1 &5209872108335002799
 GameObject:

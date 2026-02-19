@@ -36,16 +36,6 @@ public class SelectionManager : MonoBehaviour
 
     async Task HandleInput()
     {
-        //if (EventSystem.current.IsPointerOverGameObject())
-        //{
-        //    Debug.Log("111");
-        //}
-        //else
-        //{
-        //    Debug.Log("222");
-        //}
-        //Debug.Log("isDragging : " + isDragging);
-
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             if (EventSystem.current.IsPointerOverGameObject())
@@ -85,8 +75,8 @@ public class SelectionManager : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayer))
             {
                 GameObject mark = Instantiate(moveCmdMarkPrefab, hit.point, Quaternion.identity);
-                FlowField flowField = new FlowField(2);
-                flowField.ComputeFlowField(hit.point);
+                FlowField flowField = new FlowField();
+                flowField.Compute(hit.point);
                 //foreach (Unit unit in selectedUnitList)
                 //{
                 //    unit.curFlowField = flowField;

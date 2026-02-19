@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TMPro;
-using UnityEngine;
-using static Unity.Burst.Intrinsics.X86.Avx;
+﻿using UnityEngine;
 
 namespace Assets.Codes.Systems.BuildingSystem
 {
@@ -20,39 +13,39 @@ namespace Assets.Codes.Systems.BuildingSystem
         private int _width = 100;
         private int _height = 100;
         private float _cellSize = 3;
-        private Vector3 _worldStart = new Vector3(-150, 0, -150);
-        private bool[,] _gridArray;
+        private Vector3 _worldStartPos = new Vector3(-150, 0, -150);
+        private bool[,] _cellList;
         //private TextMeshPro[,] _tmpArray;
 
 
         private BuildingGrid()
         {
 
-            _gridArray = new bool[_width, _height];
+            _cellList = new bool[_width, _height];
             //_tmpArray = new TextMeshPro[width, height];
 
-            for (int x = 0; x < _width; x++)
-            {
-                for (int y = 0; y < _height; y++)
-                {
-                    Vector3 origin = _worldStart + new Vector3(x * _cellSize, 0, y * _cellSize);
+            //for (int x = 0; x < _width; x++)
+            //{
+            //    for (int y = 0; y < _height; y++)
+            //    {
+            //        Vector3 origin = _worldStartPos + new Vector3(x * _cellSize, 0, y * _cellSize);
 
-                    //Debug.DrawLine(origin, origin + new Vector3(0, 0, cellSize), Color.red, 100f);
-                    //Debug.DrawLine(origin, origin + new Vector3(cellSize, 0, 0), Color.white, 100f);
+            //        Debug.DrawLine(origin, origin + new Vector3(0, 0, cellSize), Color.red, 100f);
+            //        Debug.DrawLine(origin, origin + new Vector3(cellSize, 0, 0), Color.white, 100f);
 
-                    //GameObject textObj = new GameObject($"GridText_{x}_{y}");
-                    //textObj.transform.position =
-                    //    origin + new Vector3(cellSize * 0.5f, 1f, cellSize * 0.5f);
+            //        GameObject textObj = new GameObject($"GridText_{x}_{y}");
+            //        textObj.transform.position =
+            //            origin + new Vector3(cellSize * 0.5f, 1f, cellSize * 0.5f);
 
-                    //var tmp = textObj.AddComponent<TextMeshPro>();
-                    //tmp.text = $"{x},{y}";
-                    //tmp.fontSize = 15;
-                    //tmp.alignment = TextAlignmentOptions.Center;
-                    //tmp.color = Color.black;
+            //        var tmp = textObj.AddComponent<TextMeshPro>();
+            //        tmp.text = $"{x},{y}";
+            //        tmp.fontSize = 15;
+            //        tmp.alignment = TextAlignmentOptions.Center;
+            //        tmp.color = Color.black;
 
-                    //_tmpArray[x, y] = tmp;
-                }
-            }
+            //        _tmpArray[x, y] = tmp;
+            //    }
+            //}
 
             //Debug.DrawLine(worldStart + new Vector3(0, 0, height * cellSize),
             //               worldStart + new Vector3(width * cellSize, 0, height * cellSize),
@@ -67,62 +60,58 @@ namespace Assets.Codes.Systems.BuildingSystem
         {
             //_tmpArray[x, y].text = text;
         }
-        public bool TryGetXY(Vector3 worldPos, out int x, out int y)
+        public bool CanPlaceBuilding(Vector3 worldPos, float bdWorldWidth, float bdWorldHeight)
         {
-            x = Mathf.FloorToInt((worldPos.x - _worldStart.x) / _cellSize);
-            y = Mathf.FloorToInt((worldPos.z - _worldStart.z) / _cellSize);
-
-            if (x >= 0 && y >= 0 && x < _width && y < _height)
-                return true;
-
-            return false;
-        }
-        public bool CanPlaceBuilding(int x, int y, int bdWidth, int bdHeight)
-        {
-            //检查越界
-            int startX = x - bdWidth / 2;
-            int startY = y - bdHeight / 2;
-            if (startX < 0 || startY < 0 || startX + bdWidth >= _width || startY + bdHeight >= _height)
+            Vector3 min = new Vector3(worldPos.x - bdWorldWidth * 0.5f, 0, worldPos.z - bdWorldHeight * 0.5f);
+            Vector3 max = new Vector3(worldPos.x + bdWorldWidth * 0.5f, 0, worldPos.z + bdWorldHeight * 0.5f);
+            int startX = Mathf.FloorToInt((min.x - _worldStartPos.x) / _cellSize);
+            int startY = Mathf.FloorToInt((min.z - _worldStartPos.z) / _cellSize);
+            int endX = Mathf.FloorToInt((max.x - _worldStartPos.x) / _cellSize);
+            int endY = Mathf.FloorToInt((max.z - _worldStartPos.z) / _cellSize);
+            if (startX < 0 || startY < 0 || endX >= _width || endY >= _height)
                 return false;
-            for (int i = startX; i < startX + bdWidth; i++)
+            for (int x = startX; x <= endX; x++)
             {
-                for (int j = startY; j < startY + bdHeight; j++)
+                for (int y = startY; y <= endY; y++)
                 {
-                    if (_gridArray[i, j] == true)
+                    if (_cellList[x, y] == true)
                         return false;
                 }
             }
             return true;
         }
+
         public Vector3 GetPlacePos(Vector3 hitPos)
         {
             // 1. 转成相对坐标
-            float relativeX = hitPos.x - _worldStart.x;
-            float relativeZ = hitPos.z - _worldStart.z;
+            float relativeX = hitPos.x - _worldStartPos.x;
+            float relativeZ = hitPos.z - _worldStartPos.z;
 
             // 2. 转成格子索引
             int x = Mathf.FloorToInt(relativeX / _cellSize);
             int y = Mathf.FloorToInt(relativeZ / _cellSize);
 
             // 3. 还原为格子中心世界坐标
-            float worldX = _worldStart.x + x * _cellSize + _cellSize * 0.5f;
-            float worldZ = _worldStart.z + y * _cellSize + _cellSize * 0.5f;
+            float worldX = _worldStartPos.x + x * _cellSize + _cellSize * 0.5f;
+            float worldZ = _worldStartPos.z + y * _cellSize + _cellSize * 0.5f;
 
             return new Vector3(worldX, 0, worldZ);
         }
-        public bool PlaceBuilding(int x, int y, int bdWidth, int bdHeight)
+        public bool PlaceBuilding(Vector3 worldPos, float bdWorldWidth, float bdWorldHeight)
         {
-            //检查越界
-            int startX = x - bdWidth / 2;
-            int startY = y - bdHeight / 2;
-            if (startX < 0 || startY < 0 || startX + bdWidth >= _width || startY + bdHeight >= _height)
+            Vector3 min = new Vector3(worldPos.x - bdWorldWidth * 0.5f, 0, worldPos.z - bdWorldHeight * 0.5f);
+            Vector3 max = new Vector3(worldPos.x + bdWorldWidth * 0.5f, 0, worldPos.z + bdWorldHeight * 0.5f);
+            int startX = Mathf.FloorToInt((min.x - _worldStartPos.x) / _cellSize);
+            int startY = Mathf.FloorToInt((min.z - _worldStartPos.z) / _cellSize);
+            int endX = Mathf.FloorToInt((max.x - _worldStartPos.x) / _cellSize);
+            int endY = Mathf.FloorToInt((max.z - _worldStartPos.z) / _cellSize);
+            if (startX < 0 || startY < 0 || endX >= _width || endY >= _height)
                 return false;
-            for(int i = startX; i < startX + bdWidth; i++)
+            for (int x = startX; x <= endX; x++)
             {
-                for(int j = startY; j < startY + bdHeight; j++)
+                for (int y = startY; y <= endY; y++)
                 {
-                    _gridArray[i, j] = true;
-                    //_tmpArray[i, j].text = "Set";
+                    _cellList[x, y] = true;
                 }
             }
             return true;
