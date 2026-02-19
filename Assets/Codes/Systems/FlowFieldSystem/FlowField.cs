@@ -1,6 +1,10 @@
 ﻿using Assets.Codes.Common;
 using Assets.Codes.Game;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Assets.Codes.Systems.FlowFieldSystem
@@ -8,13 +12,14 @@ namespace Assets.Codes.Systems.FlowFieldSystem
     public struct FlowFieldCell
     {
         public Vec2I Pos;
-        public sbyte FlowDirX;
-        public sbyte FlowDirY;
-        public float Cost;
-
+        public bool IsObstacle;
+        public sbyte FlowDirX; // -1,0,1
+        public sbyte FlowDirY; // -1,0,1
+        public float Cost;     // 到目标的累计代价
         public FlowFieldCell(Vec2I pos)
         {
             Pos = pos;
+            IsObstacle = false;
             FlowDirX = 0;
             FlowDirY = 0;
             Cost = float.MaxValue;
@@ -27,13 +32,8 @@ namespace Assets.Codes.Systems.FlowFieldSystem
         private int _height;
         private float _cellSize;
         private FlowFieldCell[,] _grid;
-        private Vector3 _targetPos;
+        private Vector3 targetPos;
         private NavigationGrid _naviGrid;
-
-        // 8方向
-        private static readonly int[] dx = { -1, 0, 1, -1, 1, -1, 0, 1 };
-        private static readonly int[] dy = { 1, 1, 1, 0, 0, -1, -1, -1 };
-        private static readonly float[] moveCost = { 1.414f, 1, 1.414f, 1, 1, 1.414f, 1, 1.414f };
 
         public FlowField()
         {
@@ -48,23 +48,24 @@ namespace Assets.Codes.Systems.FlowFieldSystem
                     _grid[x, y] = new FlowFieldCell(new Vec2I(x, y));
         }
 
-        // =========================================
-        // 入口
-        // =========================================
-        public void Compute(Vector3 worldTargetPos, float unitRadius = 0f)
+        // 8方向偏移
+        private static readonly int[] dx = { -1, 0, 1, -1, 1, -1, 0, 1 };
+        private static readonly int[] dy = { 1, 1, 1, 0, 0, -1, -1, -1 };
+        private static readonly float[] moveCost = { 1.414f, 1, 1.414f, 1, 1, 1.414f, 1, 1.414f };
+
+        public void Compute(Vector3 worldTargetPos)
         {
-            _targetPos = worldTargetPos;
-
+            targetPos = worldTargetPos;
             Vec2I target = GlobalHelper.WorldToGrid(worldTargetPos, _cellSize);
-            if (!InBounds(target.X, target.Y))
-                return;
 
-            ResetGrid();
-
-            bool[,] walkable = BuildWalkableMap(unitRadius);
-
-            if (!walkable[target.X, target.Y])
-                return;
+            // 初始化
+            for (int x = 0; x < _width; x++)
+                for (int y = 0; y < _height; y++)
+                {
+                    _grid[x, y].FlowDirX = 0;
+                    _grid[x, y].FlowDirY = 0;
+                    _grid[x, y].Cost = float.MaxValue;
+                }
 
             MyPriorityQueue<Vec2I> pq = new MyPriorityQueue<Vec2I>();
             _grid[target.X, target.Y].Cost = 0;
@@ -72,142 +73,79 @@ namespace Assets.Codes.Systems.FlowFieldSystem
 
             while (pq.Count > 0)
             {
-                Vec2I current = pq.Dequeue();
-                ref FlowFieldCell currentCell = ref _grid[current.X, current.Y];
+                var current = pq.Dequeue();
+                ref var currentCell = ref _grid[current.X, current.Y];
 
                 for (int i = 0; i < 8; i++)
                 {
                     int nx = current.X + dx[i];
                     int ny = current.Y + dy[i];
-
-                    if (!InBounds(nx, ny))
-                        continue;
-
-                    if (!walkable[nx, ny])
-                        continue;
-
-                    // 禁止对角穿角
-                    if (IsDiagonal(i))
+                    if (nx >= 0 && nx < _width && ny >= 0 && ny < _height)
                     {
-                        int adj1x = current.X + dx[i];
-                        int adj1y = current.Y;
-                        int adj2x = current.X;
-                        int adj2y = current.Y + dy[i];
-
-                        if (!walkable[adj1x, adj1y] || !walkable[adj2x, adj2y])
+                        var neighbor = _grid[nx, ny];
+                        if (_naviGrid.WalkableList[nx,ny] == false) 
                             continue;
-                    }
 
-                    float newCost = currentCell.Cost + moveCost[i];
-                    ref FlowFieldCell neighbor = ref _grid[nx, ny];
-
-                    if (newCost < neighbor.Cost)
-                    {
-                        neighbor.Cost = newCost;
-                        neighbor.FlowDirX = (sbyte)Math.Clamp(current.X - nx, -1, 1);
-                        neighbor.FlowDirY = (sbyte)Math.Clamp(current.Y - ny, -1, 1);
-                        pq.Enqueue(new Vec2I(nx, ny), newCost);
-                    }
-                }
-            }
-        }
-
-        // =========================================
-        // 方向查询
-        // =========================================
-        public Vector3 GetDir(Vector3 worldPos)
-        {
-            Vec2I gridPos = GlobalHelper.WorldToGrid(worldPos, _cellSize);
-
-            int x = Mathf.Clamp(gridPos.X, 0, _width - 1);
-            int y = Mathf.Clamp(gridPos.Y, 0, _height - 1);
-
-            FlowFieldCell cell = _grid[x, y];
-
-            if (cell.Cost == float.MaxValue)
-                return Vector3.zero;
-
-            Vector3 dir = new Vector3(cell.FlowDirX, 0, cell.FlowDirY);
-
-            if (dir.sqrMagnitude > 0)
-                dir.Normalize();
-
-            return dir;
-        }
-
-        public Vector3 GetTargetPos()
-        {
-            return _targetPos;
-        }
-
-        // =========================================
-        // 工具函数
-        // =========================================
-        private void ResetGrid()
-        {
-            for (int x = 0; x < _width; x++)
-                for (int y = 0; y < _height; y++)
-                {
-                    _grid[x, y].Cost = float.MaxValue;
-                    _grid[x, y].FlowDirX = 0;
-                    _grid[x, y].FlowDirY = 0;
-                }
-        }
-
-        private bool InBounds(int x, int y)
-        {
-            return x >= 0 && x < _width && y >= 0 && y < _height;
-        }
-
-        private bool IsDiagonal(int index)
-        {
-            return index == 0 || index == 2 || index == 5 || index == 7;
-        }
-
-        // =========================================
-        // 障碍膨胀（单位半径支持）
-        // =========================================
-        private bool[,] BuildWalkableMap(float unitRadius)
-        {
-            bool[,] walkable = new bool[_width, _height];
-
-            for (int x = 0; x < _width; x++)
-                for (int y = 0; y < _height; y++)
-                    walkable[x, y] = _naviGrid.WalkableList[x, y];
-
-            if (unitRadius <= 0f)
-                return walkable;
-
-            int expand = Mathf.CeilToInt(unitRadius / _cellSize);
-
-            bool[,] inflated = new bool[_width, _height];
-
-            for (int x = 0; x < _width; x++)
-            {
-                for (int y = 0; y < _height; y++)
-                {
-                    if (!walkable[x, y])
-                    {
-                        for (int ix = -expand; ix <= expand; ix++)
+                        float newCost = currentCell.Cost + moveCost[i];
+                        if (newCost < neighbor.Cost)
                         {
-                            for (int iy = -expand; iy <= expand; iy++)
-                            {
-                                int nx = x + ix;
-                                int ny = y + iy;
-                                if (InBounds(nx, ny))
-                                    inflated[nx, ny] = true;
-                            }
+                            neighbor.Cost = newCost;
+                            // 方向指向目标
+                            neighbor.FlowDirX = (sbyte)Math.Clamp(current.X - nx, -1, 1);
+                            neighbor.FlowDirY = (sbyte)Math.Clamp(current.Y - ny, -1, 1);
+
+                            _grid[nx, ny] = neighbor;
+                            pq.Enqueue(new Vec2I(nx, ny), newCost);
                         }
                     }
                 }
             }
+        }
 
-            for (int x = 0; x < _width; x++)
-                for (int y = 0; y < _height; y++)
-                    if (inflated[x, y])
-                        walkable[x, y] = false;
+        public Vector3 GetDir(Vector3 worldPos)
+        {
+            // 转成浮点格子坐标
+            Vec2I gridPos = GlobalHelper.WorldToGrid(worldPos, _cellSize);
 
-            return walkable;
+            int x0 = gridPos.X;
+            int y0 = gridPos.Y;
+            int x1 = x0 + 1;
+            int y1 = y0 + 1;
+
+            // 越界保护（边缘直接返回最近格子方向）
+            if (x0 < 0 || y0 < 0 || x1 >= _width || y1 >= _height)
+            {
+                x0 = Mathf.Clamp(x0, 0, _width - 1);
+                y0 = Mathf.Clamp(y0, 0, _height - 1);
+                var cell = _grid[x0, y0];
+                Vector3 fallback = new Vector3(cell.FlowDirX, 0, cell.FlowDirY);
+                if (fallback.sqrMagnitude > 0)
+                    fallback.Normalize();
+                return fallback;
+            }
+
+            float tx = gridPos.X - x0;
+            float ty = gridPos.Y - y0;
+
+            Vector3 d00 = new Vector3(_grid[x0, y0].FlowDirX, 0, _grid[x0, y0].FlowDirY);
+            Vector3 d10 = new Vector3(_grid[x1, y0].FlowDirX, 0, _grid[x1, y0].FlowDirY);
+            Vector3 d01 = new Vector3(_grid[x0, y1].FlowDirX, 0, _grid[x0, y1].FlowDirY);
+            Vector3 d11 = new Vector3(_grid[x1, y1].FlowDirX, 0, _grid[x1, y1].FlowDirY);
+
+            // 双线性插值
+            Vector3 dx0 = Vector3.Lerp(d00, d10, tx);
+            Vector3 dx1 = Vector3.Lerp(d01, d11, tx);
+            Vector3 result = Vector3.Lerp(dx0, dx1, ty);
+
+            if (result.sqrMagnitude > 0)
+                result.Normalize();
+
+            return result;
+        }
+
+        public Vector3 GetTargetPos()
+        {
+            return targetPos;
         }
     }
 }
