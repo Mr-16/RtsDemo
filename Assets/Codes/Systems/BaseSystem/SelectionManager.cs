@@ -69,22 +69,19 @@ public class SelectionManager : MonoBehaviour
         if (Mouse.current.rightButton.wasPressedThisFrame)
         {
             //Debug.Log("[rightButton]");
-            Vector2 mousePos = Mouse.current.position.ReadValue();
-            Ray ray = Camera.main.ScreenPointToRay(mousePos);
-
+            Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
             if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundLayer))
             {
                 GameObject mark = Instantiate(moveCmdMarkPrefab, hit.point, Quaternion.identity);
                 FlowField flowField = new FlowField();
                 flowField.Compute(hit.point);
-                
 
                 int count = selectedUnitList.Count;
                 if (count == 0)
                     return;
 
                 // 每个单位之间的间距
-                float spacing = 3f;
+                float spacing = 2f;
                 // 计算方阵的列数（尽量接近正方形）
                 int col = Mathf.CeilToInt(Mathf.Sqrt(count));
                 int row = Mathf.CeilToInt((float)count / col);
@@ -101,8 +98,8 @@ public class SelectionManager : MonoBehaviour
                     Vector3 offset = new Vector3(c * spacing, 0, -r * spacing);
                     Vector3 targetPos = center + startOffset + offset;
                     Unit unit = selectedUnitList[i];
-                    unit.SelfTargetPos = targetPos;
-                    unit.curFlowField = flowField;
+                    unit.SeekTarget = targetPos;
+                    unit.CurFlowField = flowField;
                 }
                 if(FlowFieldGridTest.Instance() != null)
                     FlowFieldGridTest.Instance().CurFlowField = flowField;

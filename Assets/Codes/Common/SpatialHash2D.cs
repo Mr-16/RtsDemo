@@ -99,7 +99,6 @@ namespace Assets.Codes.Common
                     }
                 }
             }
-
             return result;
         }
 
