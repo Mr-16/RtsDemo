@@ -34,6 +34,7 @@ public class Unit : MonoBehaviour
     public float Atk = 10;
     public float MaxHp = 100;
     public float CurHp;
+    public float AtkDuration = 2f;
 
     private Vector3 curVelocity = Vector3.zero;
     private Vector3 curDir = Vector3.zero;
@@ -55,9 +56,8 @@ public class Unit : MonoBehaviour
 
     void Update()
     {
-        curUnitList = GameManager.Instance.UnitSh.Query(transform.position, SepRadius);
-        GameManager.Instance.UnitSh.Update(this, transform.position);
         UpdateState();
+        //Debug.Log(_curState);
     }
     public void SetSelected(bool isSelected)
     {
@@ -156,6 +156,13 @@ public class Unit : MonoBehaviour
     }
     private void UpdateIdle()
     {
+        if(CurHp == 0)
+        {
+            ChangeState(UnitState.Death);
+            return;
+        }
+        curUnitList = GameManager.Instance.UnitSh.Query(transform.position, ViewRange);
+        GameManager.Instance.UnitSh.Update(this, transform.position);
         curTargetEnemy = GetNearestEnemy();
         if(curTargetEnemy != null)
         {
@@ -167,7 +174,7 @@ public class Unit : MonoBehaviour
             ChangeState(UnitState.Move);
             return;
         }
-        if ((SeekTarget - transform.position).sqrMagnitude > 0.5)
+        if ((SeekTarget - transform.position).sqrMagnitude > 3)
         {
             ChangeState(UnitState.Seek);
             return;
@@ -195,6 +202,12 @@ public class Unit : MonoBehaviour
     }
     private void UpdateMove()
     {
+        if (CurHp == 0)
+        {
+            ChangeState(UnitState.Death);
+            return;
+        }
+        curUnitList = GameManager.Instance.UnitSh.Query(transform.position, ViewRange);
         curTargetEnemy = GetNearestEnemy();
         if (curTargetEnemy != null)
         {
@@ -218,6 +231,7 @@ public class Unit : MonoBehaviour
         transform.position = transform.position + curVelocity * Time.deltaTime;
         if (curVelocity != Vector3.zero)
             transform.forward = curVelocity;
+        GameManager.Instance.UnitSh.Update(this, transform.position);
     }
     private void ExitMove()
     {
@@ -232,13 +246,20 @@ public class Unit : MonoBehaviour
     }
     private void UpdateSeek()
     {
+        if (CurHp == 0)
+        {
+            ChangeState(UnitState.Death);
+            return;
+        }
+        curUnitList = GameManager.Instance.UnitSh.Query(transform.position, ViewRange);
+        GameManager.Instance.UnitSh.Update(this, transform.position);
         curTargetEnemy = GetNearestEnemy();
         if (curTargetEnemy != null)
         {
             ChangeState(UnitState.Chase);
             return;
         }
-        if ((SeekTarget - transform.position).sqrMagnitude < 0.5)
+        if ((SeekTarget - transform.position).sqrMagnitude < 3)
         {
             ChangeState(UnitState.Idle);
             return;
@@ -269,6 +290,13 @@ public class Unit : MonoBehaviour
     }
     private void UpdateChase()
     {
+        if (CurHp == 0)
+        {
+            ChangeState(UnitState.Death);
+            return;
+        }
+        curUnitList = GameManager.Instance.UnitSh.Query(transform.position, ViewRange);
+        GameManager.Instance.UnitSh.Update(this, transform.position);
         curTargetEnemy = GetNearestEnemy();
         if (curTargetEnemy == null)
         {
@@ -300,40 +328,60 @@ public class Unit : MonoBehaviour
     #endregion
 
     #region Atk
+    private float atkTimer = 0;
     private void EnterAtk()
     {
         curTargetEnemy.TakeDmg(Atk);
     }
     private async void UpdateAtk()
     {
+        if (CurHp == 0)
+        {
+            ChangeState(UnitState.Death);
+            return;
+        }
+        curUnitList = GameManager.Instance.UnitSh.Query(transform.position, ViewRange);
+        GameManager.Instance.UnitSh.Update(this, transform.position);
+        Vector3 curTotalForce = Vector3.zero;
+        curTotalForce = Vector3.zero;
+        curTotalForce += GetSepForce();
+        curTotalForce += GetBdSepForce();
+        curTotalForce += GetFrictionForce();
+        curVelocity = curVelocity + curTotalForce / Mass * Time.deltaTime;
+        curVelocity = Vector3.ClampMagnitude(curVelocity, MaxVelocity);
+        curVelocity.y = 0;
+        transform.position = transform.position + curVelocity * Time.deltaTime;
+        if (curVelocity != Vector3.zero)
+            transform.forward = curVelocity;
         //await Task.Delay(2000);
-        ChangeState(UnitState.Chase);
-        //curTargetEnemy = GetNearestEnemy();
-        //if ((curTargetEnemy.transform.position - transform.position).sqrMagnitude > atkRangeSq)
-        //{
-        //    ChangeState(UnitState.Chase);
-        //    return;
-        //}
+        atkTimer += Time.deltaTime;
+        if(atkTimer > AtkDuration)
+        {
+            ChangeState(UnitState.Chase);
+            return;
+        }
     }
     private void ExitAtk()
     {
-        
+        atkTimer = 0;
     }
     #endregion
 
     #region Death
     private void EnterDeath()
     {
-        
+        GameManager.Instance.UnitList.Remove(this);
+        GameManager.Instance.UnitSh.Remove(this);
+        SelectionManager.Instance.RemoveUnit(this);
+        Destroy(gameObject);
     }
     private void UpdateDeath()
     {
-
+        
     }
     private void ExitDeath()
     {
-        GameManager.Instance.UnitList.Remove(this);
-        Destroy(gameObject);
+        
     }
     #endregion
 
@@ -365,9 +413,9 @@ public class Unit : MonoBehaviour
                 continue;
             Vector3 curVec = transform.position - unit.transform.position;
             float distSq = curVec.sqrMagnitude;
-            if (distSq < 0.0001f)//·ÀÖ¹0¾àÀë
-                continue;
             if (distSq > sepRadiusSq)
+                continue;
+            if (distSq < 0.0001f)//·ÀÖ¹0¾àÀë
                 continue;
             sepForce += curVec / distSq;
         }
@@ -440,7 +488,6 @@ public class Unit : MonoBehaviour
         if(CurHp <= 0)
         {
             CurHp = 0;
-            ChangeState(UnitState.Death);
         }
     }
 }

@@ -104,7 +104,7 @@ public class SelectionManager : MonoBehaviour
                 if(FlowFieldGridTest.Instance() != null)
                     FlowFieldGridTest.Instance().CurFlowField = flowField;
                 await Task.Delay(1000);
-                Destroy(mark);
+                DestroyImmediate(mark);
             }
         }
     }
@@ -172,5 +172,10 @@ public class SelectionManager : MonoBehaviour
         foreach (Unit unit in selectedUnitList)
             unit.SetSelected(false);
         selectedUnitList.Clear();
+    }
+
+    public void RemoveUnit(Unit unit)
+    {
+        selectedUnitList.Remove(unit);
     }
 }

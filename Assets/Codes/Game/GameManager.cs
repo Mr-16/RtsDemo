@@ -16,7 +16,7 @@ namespace Assets.Codes.Game
         private GameManager() { }
         public List<Unit> UnitList = new List<Unit>();
         public GameObject BdGrid;
-        public SpatialHash2D<Unit> UnitSh = new SpatialHash2D<Unit>(10);
+        public SpatialHash2D<Unit> UnitSh = new SpatialHash2D<Unit>(3);
         public SpatialHash2D<Building> BdSh = new SpatialHash2D<Building>(10);
 
         private void Awake()
@@ -29,9 +29,6 @@ namespace Assets.Codes.Game
         }
         private void Update()
         {
-            
-            //List<MonoBehaviour> unitList = GameManager.Instance.unitSh.Query(new Vector2(UnitList[0].transform.position.x, UnitList[0].transform.position.z), 20);
-            //Debug.Log(unitList.Count);
         }
     }
 }
